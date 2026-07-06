@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel de Facturas Automatizadas</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1B2A41">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1B2A41;
+    --paper:#FAF7F0;
+    --paper-dim:#F1ECE1;
+    --teal:#2F6F62;
+    --gold:#C9A227;
+    --charcoal:#22252A;
+    --grey:#6B7280;
+    --line:#DCD4C2;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--charcoal);
+    font-family:'Inter', sans-serif;
+    display:flex;
+    min-height:100vh;
+  }
+
+  /* ---------- SIDEBAR ---------- */
+  aside{
+    width:260px;
+    flex-shrink:0;
+    background:var(--ink);
+    color:var(--paper);
+    padding:32px 24px;
+    display:flex;
+    flex-direction:column;
+    gap:28px;
+  }
+  .brand{
+    font-family:'Fraunces', serif;
+    font-size:22px;
+    font-weight:600;
+    line-height:1.2;
+  }
+  .brand span{
+    display:block;
+    font-family:'Inter', sans-serif;
+    font-size:11px;
+    font-weight:500;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--gold);
+    margin-bottom:6px;
+  }
+  .status-card{
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:6px;
+    padding:16px;
+  }
+  .status-card .label{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.1em;
+    color:rgba(250,247,240,0.55);
+    margin-bottom:6px;
+  }
+  .status-card .value{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:14px;
+    color:var(--paper);
+  }
+  .dot{
+    display:inline-block;
+    width:7px; height:7px;
+    border-radius:50%;
+    background:#5FBF9A;
+    margin-right:6px;
+  }
+
+  .tg-button{
+    margin-top:auto;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:var(--teal);
+    color:var(--paper);
+    text-decoration:none;
+    padding:13px 16px;
+    border-radius:6px;
+    font-size:14px;
+    font-weight:500;
+    transition:filter .15s ease;
+  }
+  .tg-button:hover{ filter:brightness(1.12); }
+  .tg-button svg{ flex-shrink:0; }
+
+  .sidebar-note{
+    font-size:12px;
+    color:rgba(250,247,240,0.5);
+    line-height:1.5;
+  }
+
+  /* ---------- MAIN ---------- */
+  main{
+    flex:1;
+    padding:32px 40px 40px;
+    min-width:0;
+  }
+  header.page-head{
+    margin-bottom:20px;
+  }
+  header.page-head h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:28px;
+    margin:0 0 6px;
+  }
+  header.page-head p{
+    margin:0;
+    color:var(--grey);
+    font-size:14px;
+  }
+
+  /* Folder-tab navigation, echoing a physical invoice folder */
+  .tabs{
+    display:flex;
+    gap:4px;
+    margin-top:28px;
+  }
+  .tab{
+    font-family:'Inter', sans-serif;
+    font-size:13.5px;
+    font-weight:600;
+    color:var(--grey);
+    background:var(--paper-dim);
+    border:1px solid var(--line);
+    border-bottom:none;
+    padding:11px 22px 13px;
+    cursor:pointer;
+    clip-path: polygon(10px 0, 100% 0, 100% 100%, 0 100%, 0 10px);
+    position:relative;
+    top:1px;
+  }
+  .tab.active{
+    background:#fff;
+    color:var(--ink);
+    border-color:var(--line);
+  }
+  .tab:not(.active):hover{ color:var(--ink); }
+
+  .panel{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:0 6px 6px 6px;
+    overflow:hidden;
+    box-shadow:0 1px 2px rgba(27,42,65,0.04);
+  }
+  .panel-inner{ display:none; height:70vh; }
+  .panel-inner.active{ display:block; }
+  .panel-inner iframe{
+    width:100%;
+    height:100%;
+    border:0;
+    display:block;
+  }
+
+  .drive-note{
+    font-size:12.5px;
+    color:var(--grey);
+    padding:10px 16px;
+    border-top:1px solid var(--line);
+    background:var(--paper-dim);
+  }
+
+  code.inline{
+    background:var(--paper-dim);
+    border:1px solid var(--line);
+    padding:1px 6px;
+    border-radius:4px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+  }
+</style>
+</head>
+<body>
+
+<aside>
+  <div class="brand"><span>Automatización de facturas</span>Panel de Control</div>
+
+  <div class="status-card">
+    <div class="label">Estado del bot</div>
+    <div class="value"><span class="dot"></span>Activo</div>
+  </div>
+
+  <div class="status-card">
+    <div class="label">Última factura recibida</div>
+    <div class="value">--/--/---- --:--</div>
+  </div>
+
+  <p class="sidebar-note">Las facturas se envían por Telegram desde el teléfono. El bot las guarda en Drive y las registra en la hoja de cálculo automáticamente.</p>
+
+  <a class="tg-button" href="https://t.me/TU_BOT_AQUI" target="_blank" rel="noopener">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 2 2 10.5l6 2 2 6 3-4 5 4L22 2Z" stroke="#FAF7F0" stroke-width="1.6" stroke-linejoin="round"/></svg>
+    Abrir Telegram
+  </a>
+</aside>
+
+<main>
+  <header class="page-head">
+    <h1>Facturas — Drive &amp; Hoja de cálculo</h1>
+    <p>Editá directamente acá. Los cambios se guardan en tu cuenta de Google como siempre.</p>
+  </header>
+
+  <nav class="tabs">
+    <div class="tab active" data-target="sheet">Hoja de cálculo</div>
+    <div class="tab" data-target="drive">Google Drive</div>
+    <div class="tab" data-target="dashboard">Dashboard</div>
+  </nav>
+
+  <div class="panel">
+    <div class="panel-inner active" id="sheet">
+      <iframe src="https://docs.google.com/spreadsheets/d/TU_ID_DE_SHEET/edit?usp=sharing&amp;rm=minimal&amp;widget=true"></iframe>
+    </div>
+    <div class="panel-inner" id="drive">
+      <iframe src="https://drive.google.com/embeddedfolderview?id=TU_ID_DE_CARPETA#grid"></iframe>
+    </div>
+    <div class="panel-inner" id="dashboard">
+      <iframe src="https://benjamindcsk8-code.github.io/riccione/dashboard_riccione.html"></iframe>
+    </div>
+    <div class="drive-note" id="drive-note" style="display:none;">
+      Para abrir o editar un archivo de Drive, se abre en una pestaña nueva — Google no permite editar documentos dentro del recuadro incrustado, solo navegarlos.
+    </div>
+  </div>
+</main>
+
+<script>
+  const tabs = document.querySelectorAll('.tab');
+  const panels = document.querySelectorAll('.panel-inner');
+  const driveNote = document.getElementById('drive-note');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      panels.forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.target).classList.add('active');
+      driveNote.style.display = tab.dataset.target === 'drive' ? 'block' : 'none';
+    });
+  });
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
+</script>
+
+</body>
+</html>

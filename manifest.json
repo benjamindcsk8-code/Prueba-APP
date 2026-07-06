@@ -1,0 +1,16 @@
+{
+  "name": "Panel de Facturas Automatizadas",
+  "short_name": "Facturas",
+  "start_url": "./dashboard_facturas.html",
+  "display": "standalone",
+  "background_color": "#FAF7F0",
+  "theme_color": "#1B2A41",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
