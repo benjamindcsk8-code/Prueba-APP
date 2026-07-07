@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel de Facturas Automatizadas</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1B2A41">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root{
+    --ink:#1B2A41;
+    --paper:#FAF7F0;
+    --paper-dim:#F1ECE1;
+    --teal:#2F6F62;
+    --teal-dim:#E4F3EC;
+    --gold:#C9A227;
+    --red:#B3452F;
+    --charcoal:#22252A;
+    --grey:#6B7280;
+    --line:#DCD4C2;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--charcoal);
+    font-family:'Inter', sans-serif;
+    display:flex;
+    min-height:100vh;
+  }
+
+  /* ---------- SIDEBAR ---------- */
+  aside{
+    width:270px;
+    flex-shrink:0;
+    background:var(--ink);
+    color:var(--paper);
+    padding:32px 24px;
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+  }
+  .brand{
+    font-family:'Fraunces', serif;
+    font-size:22px;
+    font-weight:600;
+    line-height:1.2;
+  }
+  .brand span{
+    display:block;
+    font-family:'Inter', sans-serif;
+    font-size:11px;
+    font-weight:500;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--gold);
+    margin-bottom:6px;
+  }
+
+  .location-picker{ position:relative; }
+  .location-picker label{
+    font-size:11px; text-transform:uppercase; letter-spacing:.1em;
+    color:rgba(250,247,240,0.55); margin-bottom:6px; display:block;
+  }
+  .location-picker select{
+    width:100%; appearance:none;
+    background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.18);
+    color:var(--paper);
+    font-family:'Inter', sans-serif; font-size:14.5px; font-weight:600;
+    padding:11px 34px 11px 12px; border-radius:6px; cursor:pointer;
+  }
+  .location-picker::after{
+    content:'▾'; position:absolute; right:12px; bottom:11px;
+    color:var(--gold); pointer-events:none; font-size:13px;
+  }
+  .location-picker select option{ color:#22252A; }
+
+  .status-card{
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:6px;
+    padding:16px;
+  }
+  .status-card .label{
+    font-size:11px; text-transform:uppercase; letter-spacing:.1em;
+    color:rgba(250,247,240,0.55); margin-bottom:6px;
+  }
+  .status-card .value{ font-family:'IBM Plex Mono', monospace; font-size:13.5px; color:var(--paper); word-break:break-all; }
+  .dot{ display:inline-block; width:7px; height:7px; border-radius:50%; background:#5FBF9A; margin-right:6px; }
+  .dot.off{ background:#9AA1AC; }
+
+  .connect-btn{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    background:var(--gold); color:var(--ink); border:none;
+    padding:12px 16px; border-radius:6px; font-size:14px; font-weight:700;
+    cursor:pointer; font-family:'Inter', sans-serif;
+  }
+  .connect-btn:hover{ filter:brightness(1.06); }
+  .connect-btn[disabled]{ opacity:.55; cursor:default; }
+
+  .tg-button{
+    margin-top:auto;
+    display:flex; align-items:center; gap:10px;
+    background:var(--teal); color:var(--paper); text-decoration:none;
+    padding:13px 16px; border-radius:6px; font-size:14px; font-weight:500;
+    transition:filter .15s ease;
+  }
+  .tg-button:hover{ filter:brightness(1.12); }
+  .sidebar-note{ font-size:12px; color:rgba(250,247,240,0.5); line-height:1.5; }
+
+  /* ---------- MAIN ---------- */
+  main{ flex:1; padding:32px 40px 40px; min-width:0; }
+  header.page-head{ margin-bottom:20px; display:flex; align-items:flex-start; justify-content:space-between; gap:24px; }
+  header.page-head h1{ font-family:'Fraunces', serif; font-weight:600; font-size:28px; margin:0 0 6px; }
+  header.page-head p{ margin:0; color:var(--grey); font-size:14px; }
+
+  .conn-pill{
+    flex-shrink:0; display:flex; align-items:center; gap:7px;
+    background:var(--paper-dim); border:1px solid var(--line); color:var(--grey);
+    font-size:12px; font-weight:600; padding:7px 14px; border-radius:20px; white-space:nowrap;
+  }
+  .conn-pill.on{ color:var(--teal); }
+
+  .tabs{ display:flex; gap:4px; margin-top:22px; }
+  .tab{
+    font-family:'Inter', sans-serif; font-size:13.5px; font-weight:600; color:var(--grey);
+    background:var(--paper-dim); border:1px solid var(--line); border-bottom:none;
+    padding:11px 22px 13px; cursor:pointer;
+    clip-path: polygon(10px 0, 100% 0, 100% 100%, 0 100%, 0 10px);
+    position:relative; top:1px;
+  }
+  .tab.active{ background:#fff; color:var(--ink); border-color:var(--line); }
+  .tab:not(.active):hover{ color:var(--ink); }
+
+  .panel{
+    background:#fff; border:1px solid var(--line); border-radius:0 6px 6px 6px;
+    overflow:hidden; box-shadow:0 1px 2px rgba(27,42,65,0.04); min-height:440px;
+  }
+  .panel-inner{ display:none; }
+  .panel-inner.active{ display:block; }
+
+  .gate{
+    height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:14px; padding:60px 40px; text-align:center; min-height:440px;
+  }
+  .gate p{ margin:0; max-width:340px; color:var(--grey); font-size:14px; line-height:1.6; }
+
+  /* Sheet toolbar + table */
+  .sheet-toolbar{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    padding:12px 16px; border-bottom:1px solid var(--line); background:var(--paper-dim);
+  }
+  .sheet-toolbar input[type=text]{
+    font-family:'IBM Plex Mono', monospace; font-size:12.5px;
+    border:1px solid var(--line); border-radius:5px; padding:7px 10px;
+    width:220px; background:#fff; color:var(--ink);
+  }
+  .sheet-toolbar button{
+    background:var(--ink); color:var(--paper); border:none; border-radius:5px;
+    font-size:12.5px; font-weight:600; padding:8px 14px; cursor:pointer;
+  }
+  .sheet-toolbar button:hover{ filter:brightness(1.15); }
+  .sheet-toolbar .msg{ font-size:12px; color:var(--grey); }
+  .sheet-toolbar .msg.err{ color:var(--red); }
+  .sheet-toolbar .msg.ok{ color:var(--teal); }
+
+  .table-wrap{ overflow:auto; max-height:60vh; }
+  table.live-sheet{ width:100%; border-collapse:collapse; font-size:13px; }
+  table.live-sheet th{
+    text-align:left; padding:9px 14px; background:var(--paper-dim); color:var(--grey);
+    font-size:10.5px; text-transform:uppercase; letter-spacing:.05em;
+    border-bottom:1px solid var(--line); position:sticky; top:0;
+  }
+  table.live-sheet td{ padding:9px 14px; border-bottom:1px solid var(--line); border-right:1px solid #F3EFE4; white-space:nowrap; }
+  table.live-sheet td[contenteditable]:focus{ outline:2px solid var(--gold); outline-offset:-2px; background:#FFFBF0; }
+  table.live-sheet td.saving{ background:#FFF3D6; }
+  table.live-sheet td.saved{ background:var(--teal-dim); }
+
+  /* Drive */
+  .file-toolbar{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    padding:12px 16px; border-bottom:1px solid var(--line); background:var(--paper-dim);
+  }
+  .file-toolbar span{ font-size:12.5px; color:var(--grey); }
+  .file-toolbar button{
+    background:var(--ink); color:var(--paper); border:none; border-radius:5px;
+    font-size:12.5px; font-weight:600; padding:8px 14px; cursor:pointer;
+  }
+  .file-list{ padding:6px 0; max-height:60vh; overflow:auto; }
+  .file-row{ display:flex; align-items:center; gap:12px; padding:11px 16px; border-bottom:1px solid var(--line); }
+  .file-row:last-child{ border-bottom:none; }
+  .file-row .ficon{ width:34px; height:34px; border-radius:6px; background:var(--teal-dim); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .file-row a.fname{ font-size:13.5px; font-weight:500; color:var(--ink); text-decoration:none; }
+  .file-row a.fname:hover{ text-decoration:underline; }
+  .file-row .fmeta{ font-size:12px; color:var(--grey); margin-left:auto; text-align:right; }
+
+  .panel-inner iframe{ width:100%; height:70vh; border:0; display:block; }
+
+  .empty-note{ font-size:12.5px; color:var(--grey); padding:14px 16px; }
+</style>
+</head>
+<body>
+
+<aside>
+  <div class="brand"><span>Automatización de facturas</span>Panel de Control</div>
+
+  <div class="location-picker">
+    <label>Local</label>
+    <select id="locationSelect">
+      <option value="riccione">Riccione</option>
+      <option value="local2">Local 2</option>
+      <option value="local3">Local 3</option>
+    </select>
+  </div>
+
+  <button class="connect-btn" id="connectBtn">Conectar con Google</button>
+
+  <div class="status-card">
+    <div class="label">Estado de conexión</div>
+    <div class="value" id="connValue"><span class="dot off"></span>Sin conectar</div>
+  </div>
+
+  <div class="status-card">
+    <div class="label">Estado del bot</div>
+    <div class="value"><span class="dot"></span>Activo</div>
+  </div>
+
+  <p class="sidebar-note">Las facturas se envían por Telegram desde el teléfono. El bot las guarda en Drive y las registra en la hoja de cálculo automáticamente.</p>
+
+  <a class="tg-button" id="tgButton" href="#" target="_blank" rel="noopener">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 2 2 10.5l6 2 2 6 3-4 5 4L22 2Z" stroke="#FAF7F0" stroke-width="1.6" stroke-linejoin="round"/></svg>
+    Abrir Telegram
+  </a>
+</aside>
+
+<main>
+  <header class="page-head">
+    <div>
+      <h1 id="pageTitle">Facturas — Riccione</h1>
+      <p>Los datos se leen y se guardan directamente en tu cuenta de Google.</p>
+    </div>
+    <div class="conn-pill" id="connPill"><span class="dot off"></span>Sin conectar</div>
+  </header>
+
+  <nav class="tabs">
+    <div class="tab active" data-target="sheet">Hoja de cálculo</div>
+    <div class="tab" data-target="drive">Google Drive</div>
+    <div class="tab" data-target="dashboard">Dashboard</div>
+  </nav>
+
+  <div class="panel">
+
+    <div class="panel-inner active" id="sheet">
+      <div id="sheetGate" class="gate">
+        <p>Conectate con Google (botón en el panel izquierdo) para ver y editar la hoja de cálculo de este local.</p>
+      </div>
+      <div id="sheetContent" style="display:none;">
+        <div class="sheet-toolbar">
+          <span style="font-size:12.5px; color:var(--grey);">Rango:</span>
+          <input type="text" id="rangeInput" value="">
+          <button id="loadSheetBtn">Cargar</button>
+          <span class="msg" id="sheetMsg"></span>
+        </div>
+        <div class="table-wrap">
+          <table class="live-sheet"><thead id="sheetHead"></thead><tbody id="sheetBody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-inner" id="drive">
+      <div id="driveGate" class="gate">
+        <p>Conectate con Google (botón en el panel izquierdo) para ver y subir archivos de la carpeta de este local.</p>
+      </div>
+      <div id="driveContent" style="display:none;">
+        <div class="file-toolbar">
+          <span id="fileCount">— archivos</span>
+          <span style="display:flex; gap:8px;">
+            <button id="refreshDriveBtn">Actualizar</button>
+            <button id="uploadBtn">+ Subir archivo</button>
+          </span>
+          <input type="file" id="fileInput" style="display:none;">
+        </div>
+        <div class="file-list" id="driveList"></div>
+      </div>
+    </div>
+
+    <div class="panel-inner" id="dashboard">
+      <iframe id="dashboardFrame" src=""></iframe>
+    </div>
+
+  </div>
+</main>
+
+<script>
+  /* ============== CONFIGURACIÓN POR LOCAL ==============
+     Completá clientId / sheetId / driveFolderId / dashboardUrl / telegramUrl
+     de cada local a medida que los vayas creando en Google Cloud. */
+  const LOCATIONS = {
+    riccione: {
+      label: 'Riccione',
+      clientId: '942176207074-r2buv5peirf4mb6gma5c2h3amq8taoo6.apps.googleusercontent.com',
+      sheetId: '1wfzO-25afOAAoxUCv-powKTm2Bp7VjUbuCREyuxUvbA',
+      driveFolderId: '1SfzAOXIofBwQY_dGi0xT_yRdoGuk64lB',
+      dashboardUrl: 'https://benjamindcsk8-code.github.io/riccione/dashboard_riccione.html',
+      telegramUrl: 'https://t.me/TU_BOT_RICCIONE',
+      defaultRange: 'JULIO 2026!A1:J60'
+    },
+    local2: {
+      label: 'Local 2',
+      clientId: 'PENDIENTE_CLIENT_ID_LOCAL2',
+      sheetId: 'PENDIENTE_SHEET_ID_LOCAL2',
+      driveFolderId: 'PENDIENTE_FOLDER_ID_LOCAL2',
+      dashboardUrl: 'PENDIENTE_URL_DASHBOARD_LOCAL2',
+      telegramUrl: 'https://t.me/TU_BOT_LOCAL2',
+      defaultRange: 'A1:J60'
+    },
+    local3: {
+      label: 'Local 3',
+      clientId: 'PENDIENTE_CLIENT_ID_LOCAL3',
+      sheetId: 'PENDIENTE_SHEET_ID_LOCAL3',
+      driveFolderId: 'PENDIENTE_FOLDER_ID_LOCAL3',
+      dashboardUrl: 'PENDIENTE_URL_DASHBOARD_LOCAL3',
+      telegramUrl: 'https://t.me/TU_BOT_LOCAL3',
+      defaultRange: 'A1:J60'
+    }
+  };
+
+  const SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive';
+
+  let currentLocation = 'riccione';
+  const tokenClients = {};   // 1 token client por local (cada uno con su propio Client ID)
+  const accessTokens = {};   // token vigente por local, en memoria (se pierde al recargar la página)
+
+  const $ = (id) => document.getElementById(id);
+
+  function currentConfig(){ return LOCATIONS[currentLocation]; }
+
+  function setConnPill(connected){
+    const pill = $('connPill');
+    const sidebarVal = $('connValue');
+    if (connected) {
+      pill.innerHTML = '<span class="dot"></span>Conectado';
+      pill.classList.add('on');
+      sidebarVal.innerHTML = '<span class="dot"></span>Conectado';
+    } else {
+      pill.innerHTML = '<span class="dot off"></span>Sin conectar';
+      pill.classList.remove('on');
+      sidebarVal.innerHTML = '<span class="dot off"></span>Sin conectar';
+    }
+  }
+
+  function showGates(connected){
+    $('sheetGate').style.display = connected ? 'none' : 'flex';
+    $('sheetContent').style.display = connected ? 'block' : 'none';
+    $('driveGate').style.display = connected ? 'none' : 'flex';
+    $('driveContent').style.display = connected ? 'block' : 'none';
+  }
+
+  function applyLocationUI(){
+    const cfg = currentConfig();
+    $('pageTitle').textContent = 'Facturas — ' + cfg.label;
+    $('tgButton').href = cfg.telegramUrl;
+    $('rangeInput').value = cfg.defaultRange;
+    $('dashboardFrame').src = cfg.dashboardUrl.startsWith('http') ? cfg.dashboardUrl : 'about:blank';
+    const connected = !!accessTokens[currentLocation];
+    setConnPill(connected);
+    showGates(connected);
+    if (connected) { loadSheet(); loadDrive(); }
+    else { $('sheetBody').innerHTML=''; $('sheetHead').innerHTML=''; $('driveList').innerHTML=''; }
+  }
+
+  function ensureTokenClient(locKey){
+    if (tokenClients[locKey]) return tokenClients[locKey];
+    const cfg = LOCATIONS[locKey];
+    const client = google.accounts.oauth2.initTokenClient({
+      client_id: cfg.clientId,
+      scope: SCOPES,
+      callback: (resp) => {
+        if (resp.error) { alert('No se pudo conectar con Google: ' + resp.error); return; }
+        accessTokens[locKey] = resp.access_token;
+        if (locKey === currentLocation) applyLocationUI();
+      }
+    });
+    tokenClients[locKey] = client;
+    return client;
+  }
+
+  $('connectBtn').addEventListener('click', () => {
+    if (currentConfig().clientId.startsWith('PENDIENTE')) {
+      alert('Este local todavía no tiene su Client ID configurado. Completá LOCATIONS en el código primero.');
+      return;
+    }
+    ensureTokenClient(currentLocation).requestAccessToken();
+  });
+
+  $('locationSelect').addEventListener('change', (e) => {
+    currentLocation = e.target.value;
+    applyLocationUI();
+  });
+
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.panel-inner').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.target).classList.add('active');
+    });
+  });
+
+  /* ============== HOJA DE CÁLCULO ============== */
+
+  function colLetter(n){ // 0-based column index -> A1 letter
+    let s = '';
+    n++;
+    while (n > 0) {
+      const rem = (n - 1) % 26;
+      s = String.fromCharCode(65 + rem) + s;
+      n = Math.floor((n - 1) / 26);
+    }
+    return s;
+  }
+
+  async function loadSheet(){
+    const cfg = currentConfig();
+    const token = accessTokens[currentLocation];
+    const range = $('rangeInput').value.trim() || cfg.defaultRange;
+    const msg = $('sheetMsg');
+    msg.textContent = 'Cargando…'; msg.className = 'msg';
+
+    try {
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${cfg.sheetId}/values/${encodeURIComponent(range)}`;
+      const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+      if (!res.ok) throw new Error((await res.json()).error?.message || res.statusText);
+      const data = await res.json();
+      const values = data.values || [];
+      renderSheet(values, range);
+      msg.textContent = 'Cargado ✓'; msg.className = 'msg ok';
+    } catch (err) {
+      msg.textContent = 'Error: ' + err.message; msg.className = 'msg err';
+    }
+  }
+
+  function renderSheet(values, range){
+    const sheetNamePrefix = range.includes('!') ? range.split('!')[0] + '!' : '';
+    const head = $('sheetHead'), body = $('sheetBody');
+    if (values.length === 0) { head.innerHTML=''; body.innerHTML='<tr><td style="padding:16px;color:#6B7280;">Sin datos en este rango.</td></tr>'; return; }
+
+    const headers = values[0];
+    head.innerHTML = '<tr>' + headers.map(h => `<th>${h ?? ''}</th>`).join('') + '</tr>';
+
+    const rows = values.slice(1);
+    body.innerHTML = rows.map((row, rIdx) => {
+      const cells = headers.map((_, cIdx) => {
+        const val = row[cIdx] ?? '';
+        const a1 = sheetNamePrefix + colLetter(cIdx) + (rIdx + 2); // +2: fila 1 es encabezado, base 1
+        return `<td contenteditable="true" data-a1="${a1}">${escapeHtml(val)}</td>`;
+      }).join('');
+      return `<tr>${cells}</tr>`;
+    }).join('');
+
+    body.querySelectorAll('td[contenteditable]').forEach(td => {
+      td.addEventListener('blur', () => saveCell(td));
+      td.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); td.blur(); } });
+    });
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  async function saveCell(td){
+    const cfg = currentConfig();
+    const token = accessTokens[currentLocation];
+    const a1 = td.dataset.a1;
+    const value = td.textContent;
+    td.classList.add('saving');
+    try {
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${cfg.sheetId}/values/${encodeURIComponent(a1)}?valueInputOption=USER_ENTERED`;
+      const res = await fetch(url, {
+        method: 'PUT',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ range: a1, values: [[value]] })
+      });
+      if (!res.ok) throw new Error((await res.json()).error?.message || res.statusText);
+      td.classList.remove('saving'); td.classList.add('saved');
+      setTimeout(() => td.classList.remove('saved'), 900);
+    } catch (err) {
+      td.classList.remove('saving');
+      alert('No se pudo guardar: ' + err.message);
+    }
+  }
+
+  $('loadSheetBtn').addEventListener('click', loadSheet);
+
+  /* ============== DRIVE ============== */
+
+  async function loadDrive(){
+    const cfg = currentConfig();
+    const token = accessTokens[currentLocation];
+    const list = $('driveList');
+    list.innerHTML = '<div class="empty-note">Cargando archivos…</div>';
+    try {
+      const q = encodeURIComponent(`'${cfg.driveFolderId}' in parents and trashed=false`);
+      const fields = encodeURIComponent('files(id,name,mimeType,modifiedTime,size,webViewLink)');
+      const url = `https://www.googleapis.com/drive/v3/files?q=${q}&fields=${fields}&orderBy=modifiedTime desc&pageSize=100`;
+      const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+      if (!res.ok) throw new Error((await res.json()).error?.message || res.statusText);
+      const data = await res.json();
+      renderDrive(data.files || []);
+    } catch (err) {
+      list.innerHTML = `<div class="empty-note" style="color:#B3452F;">Error: ${err.message}</div>`;
+    }
+  }
+
+  function fmtBytes(n){
+    if (!n) return '—';
+    n = parseInt(n, 10);
+    if (n < 1024) return n + ' B';
+    if (n < 1024*1024) return (n/1024).toFixed(0) + ' KB';
+    return (n/1024/1024).toFixed(1) + ' MB';
+  }
+  function fmtDate(iso){
+    if (!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' });
+  }
+
+  function renderDrive(files){
+    $('fileCount').textContent = files.length + (files.length === 1 ? ' archivo' : ' archivos');
+    const list = $('driveList');
+    if (files.length === 0) { list.innerHTML = '<div class="empty-note">Esta carpeta todavía no tiene archivos.</div>'; return; }
+    list.innerHTML = files.map(f => `
+      <div class="file-row">
+        <div class="ficon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 2h9l5 5v15H6V2z" stroke="#2F6F62" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        </div>
+        <a class="fname" href="${f.webViewLink || '#'}" target="_blank" rel="noopener">${escapeHtml(f.name)}</a>
+        <div class="fmeta">${fmtBytes(f.size)}<br>${fmtDate(f.modifiedTime)}</div>
+      </div>
+    `).join('');
+  }
+
+  $('refreshDriveBtn').addEventListener('click', loadDrive);
+
+  $('uploadBtn').addEventListener('click', () => $('fileInput').click());
+
+  $('fileInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const cfg = currentConfig();
+    const token = accessTokens[currentLocation];
+
+    const metadata = { name: file.name, parents: [cfg.driveFolderId] };
+    const boundary = '-------facturas' + Date.now();
+    const delimiter = `\r\n--${boundary}\r\n`;
+    const closeDelim = `\r\n--${boundary}--`;
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64Data = reader.result.split(',')[1];
+      const body =
+        delimiter + 'Content-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(metadata) +
+        delimiter + `Content-Type: ${file.type || 'application/octet-stream'}\r\n` + 'Content-Transfer-Encoding: base64\r\n\r\n' + base64Data +
+        closeDelim;
+
+      try {
+        const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + token, 'Content-Type': `multipart/related; boundary=${boundary}` },
+          body
+        });
+        if (!res.ok) throw new Error((await res.json()).error?.message || res.statusText);
+        e.target.value = '';
+        loadDrive();
+      } catch (err) {
+        alert('No se pudo subir el archivo: ' + err.message);
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+
+  /* ============== INIT ============== */
+  applyLocationUI();
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
+</script>
+
+</body>
+</html>
